@@ -1,0 +1,14 @@
+= Wye
+
+Wye provides users of ActiveRecord 3.2 with scopes and block methods for
+contextual execution of database queries on alternative database connections.
+Wye's patterns are most useful to applications making use of either replicated
+or federated databases.
+
+== Basic Usage Patterns
+
+(Documentation is forthcoming.)
+
+== Configuration
+
+(Documentation is forthcoming.)
