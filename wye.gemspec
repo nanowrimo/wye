@@ -25,4 +25,8 @@ Gem::Specification.new do |s|
 
   s.add_development_dependency 'rspec', '~> 2.5'
   s.add_development_dependency 'shoulda-matchers', '~> 1.1'
+
+  s.add_development_dependency 'pry'
+  s.add_development_dependency 'pry-debugger'
+  s.add_development_dependency 'pry-stack_explorer'
 end
