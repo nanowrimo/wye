@@ -31,8 +31,7 @@ module Wye
     private
 
     def class_to_alternate(thread = Thread.current)
-      @thread_to_class_to_alternate[thread] ||= {}
-      cta = @thread_to_class_to_alternate[thread]
+      cta = @thread_to_class_to_alternate[thread] ||= {}
       cta.empty? ? (thread == Thread.main ? cta : class_to_alternate(Thread.main)) : cta
     end
 
