@@ -5,10 +5,59 @@ contextual execution of database queries on alternative database connections.
 Wye's patterns are most useful to applications making use of either replicated
 or federated databases.
 
-== Basic Usage Patterns
-
-(Documentation is forthcoming.)
-
 == Configuration
 
-(Documentation is forthcoming.)
+Alternate connections are defined under the main connection's configuration
+entry. An example Rails +database.yml+ might look like the following in an
+environment where the MySQL database on +master-db.example+ is being
+replicated to +slave-db1.example+ and +slave-db2.example+.
+
+    production:
+      adapter: mysql2
+      username: 'username'
+      password: 'main password'
+      database: 'database'
+      host: 'master-db.example'
+      alternates:
+        slave1:
+          host: 'slave-db1.example'
+          password: 'slave password'
+        slave2:
+          host: 'slave-db2.example'
+          password: 'slave password'
+
+Each alternate entry is merged with that of its parent entry. In this same
+example, the resulting configuration for +slave1+ would be the following.
+
+    adapter: mysql2
+    username: 'username'
+    password: 'slave password'
+    database: 'database'
+    host: 'slave-db1.example'
+
+== Basic Usage Patterns
+
+    class Model < ActiveRecord::Base; end
+
+    # Calling .on executes the block on the given alternate connection
+    Model.on(:slave1) do
+      Model.find(1) # find Model 1 on the slave1 connection pool
+    end
+
+    # Class inheritance is respected
+    class DerivedModel < Model; end
+
+    Model.on(:slave1) do
+      Model.find(1)         # on slave1 pool
+      DerivedModel.find(1)  # on slave1 pool
+    end
+
+    DerivedModel.on(:slave1) do
+      Model.find(1)         # on main pool
+      DerivedModel.find(1)  # on slave1 pool
+    end
+
+    # Execute everything that shares the base connection pool on slave1
+    ActiveRecord::Base.on(:slave1) do
+      # ...
+    end
