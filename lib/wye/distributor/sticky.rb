@@ -8,7 +8,7 @@ module Wye
       end
 
       def next(id)
-        @values[Zlib.crc32(id.to_s) % @values.length]
+        (mod = @values.length) > 0 ? @values[Zlib.crc32(id.to_s) % mod] : nil
       end
     end
   end

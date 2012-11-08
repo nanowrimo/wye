@@ -7,6 +7,8 @@ module Wye
 
       def next(*arguments)
         @cycle.next
+      rescue StopIteration
+        nil
       end
     end
   end
