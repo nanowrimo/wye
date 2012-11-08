@@ -19,6 +19,10 @@ module Wye
         @class_to_alternate_pools.map { |(klass,atp)| atp.map(&:first) }.flatten.uniq
       end
 
+      def distributor(type)
+        Distributor.new(type, alternates << nil)
+      end
+
       def establish_connection(name, spec)
         super.tap do
           @class_to_alternate_pools[name] ||= {}
