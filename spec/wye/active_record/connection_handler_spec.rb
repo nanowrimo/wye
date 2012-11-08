@@ -34,6 +34,18 @@ module Wye::ActiveRecord
       subject { handler.remove_connection(klass) }
     end
 
+    describe "#alternates" do
+      subject { handler.alternates }
+
+      context "after a connection is established with 2 alternates" do
+        before(:each) { handler.establish_connection(klass.name, spec) }
+
+        it { should be_a(Array) }
+        it { should include(:a1) }
+        it { should include(:a2) }
+      end
+    end
+
     describe "#connection_pools" do
       subject { handler.connection_pools.values }
 
@@ -71,7 +83,7 @@ module Wye::ActiveRecord
         before(:each) { handler.establish_connection(base_klass.name, spec) }
 
         context "given an existing alternate" do
-          let(:alternate) { 'a1' }
+          let(:alternate) { :a1 }
           let(:alternate_pool) { handler.connection_pools.values.second }
 
           it { should be_a(ActiveRecord::ConnectionAdapters::ConnectionPool) }
@@ -123,7 +135,7 @@ module Wye::ActiveRecord
         end
 
         context "and an existing alternate is switched on" do
-          let(:alternate) { 'a1' }
+          let(:alternate) { :a1 }
 
           it("retrieves the alternate connection pool") do
             handler.should_receive(:retrieve_alternate_connection_pool).with(klass, alternate)

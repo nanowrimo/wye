@@ -15,13 +15,17 @@ module Wye
         @switch = Switch.new(::ActiveRecord::Base)
       end
 
+      def alternates
+        @class_to_alternate_pools.map { |(klass,atp)| atp.map(&:first) }.flatten.uniq
+      end
+
       def establish_connection(name, spec)
         super.tap do
           @class_to_alternate_pools[name] ||= {}
 
           alternate_specs(spec).each do |alternate,spec|
             @connection_pools[spec] ||= ::ActiveRecord::ConnectionAdapters::ConnectionPool.new(spec)
-            @class_to_alternate_pools[name][alternate] = @connection_pools[spec]
+            @class_to_alternate_pools[name][alternate.to_sym] = @connection_pools[spec]
           end
         end
       end
