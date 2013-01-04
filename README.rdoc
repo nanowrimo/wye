@@ -1,9 +1,25 @@
 = Wye
 
-Wye provides users of ActiveRecord 3.2 with scopes and block methods for
-contextual execution of database queries on alternative database connections.
-Wye's patterns are most useful to applications making use of either replicated
-or federated databases.
+Wye provides users of ActiveRecord with methods for contextual execution of
+database queries on alternative database connections. Wye's patterns are most
+useful for applications making use of either replicated or federated
+databases.
+
+== Why Wye?
+
+<em>Why didn't you just use one of the many options out there? Octopus,
+DataFabric, DbCharmer, etc.</em>
+
+The existing implementations that I evaluated save Octopus did not work with
+AR 3. And after reviewing the latter, I thought it to be a little convoluted
+for our requirements. Wye's implementation is dead simple and required no
+monkey patching.
+
+== Compatibility
+
+Wye was developed against AR 3.2. However, AR's ConnectionHandler which Wye
+replaces was introduced back in AR 2.2 so please try it out with other
+releases and let me know how it goes.
 
 == Configuration
 
@@ -39,7 +55,7 @@ example, the resulting configuration for +slave1+ would be the following.
 
     class Model < ActiveRecord::Base; end
 
-    # Calling .on executes the block on the given alternate connection
+    # Calling .on executes queries within the block on the given alternate connection
     Model.on(:slave1) do
       Model.find(1) # find Model 1 on the slave1 connection pool
     end
@@ -59,5 +75,69 @@ example, the resulting configuration for +slave1+ would be the following.
 
     # Execute everything that shares the base connection pool on slave1
     ActiveRecord::Base.on(:slave1) do
+      # ...
+    end
+
+== Distributing Queries Across Alternates
+
+A common usage pattern when working with replicated databases is to
+distribute queries among available connections (load balancing). Wye provides
+two application-level mechanisms for this.
+
+=== Round Robin Distributor
+
+The round robin distributor will simply cycle through available pools
+(main and alternates) upon each call to +next+.
+
+    distributor = ActiveRecord::Base.connection_handler.distributor(:round_robin)
+    distributor.next # => :slave1
+    distributor.next # => :slave2
+    distributor.next # => nil (main pool)
+    distributor.next # => :slave1
+    distributor.next # => :slave2
+    distributor.next # => nil (main pool)
+    distributor.next # => :slave1
+    distributor.next # => ...
+
+=== Sticky Distributor
+
+The sticky distributor will return the same pool given a consistent key value
+but will still result in even distribution across pools given different keys.
+This can be useful when you want to avoid inconsistencies between requests for
+the same client due to replication lag and 'sticking' the client to a
+particular replication slave is an acceptable solution.
+
+    distributor = ActiveRecord::Base.connection_handler.distributor(:sticky)
+    distributor.next('f') # => nil (main pool)
+    distributor.next('g') # => :slave2
+    distributor.next('h') # => :slave1
+    distributor.next('g') # => :slave2
+    distributor.next('g') # => :slave2
+    distributor.next('f') # => nil (main pool)
+
+=== Using Distributors
+
+We use the 'sticky' distributor in conjunction with the source IP of each
+request. Our Rails application controller looks something like this.
+
+    class ApplicationController < ActionController::Base
+      # ...
+
+      class_attribute :database_distributor
+      self.database_distributor = ActiveRecord::Base.connection_handler.distributor(:sticky)
+
+      protected
+
+      def distribute_database_reads
+        ActiveRecord::Base.on(database_distributor.next(request.remote_ip)) { yield }
+      end
+    end
+
+The +distribute_database_reads+ method can in turn be used as an around filter
+on controller actions that we know to be read-only.
+
+    class ForumThreadCommentsController < ApplicationController
+      around_filter :distribute_database_reads, :only => [:index, :show]
+
       # ...
     end
