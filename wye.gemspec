@@ -14,7 +14,7 @@ Gem::Specification.new do |s|
   s.platform = Gem::Platform::RUBY
   s.authors = ['Daniel Duvall']
   s.email = ['dan@mutual.io']
-  s.homepage = 'https://github.com/lettersandlight/wye'
+  s.homepage = 'https://github.com/nanowrimo/wye'
 
   s.files = Dir['{lib}/**/*'] + ['MIT-LICENSE', 'Gemfile', 'README.rdoc']
   s.version = Wye::VERSION
